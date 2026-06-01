@@ -5,474 +5,120 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ポーカープリフロップクイズ</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #1a4a1a;
-    color: #fff;
-    font-family: 'Segoe UI', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-  }
-  h1 { font-size: 1.4em; margin-bottom: 6px; letter-spacing: 1px; }
-  .score-bar {
-    font-size: 0.9em; color: #b8f5b8; margin-bottom: 20px;
-  }
-  .position-badge {
-    background: #2d7a2d; border: 2px solid #5adf5a;
-    border-radius: 12px; padding: 8px 24px;
-    font-size: 1.1em; font-weight: bold; margin-bottom: 20px;
-    letter-spacing: 2px;
-  }
-  .cards-row {
-    display: flex; gap: 16px; margin-bottom: 28px;
-  }
-  .card {
-    width: 90px; height: 126px;
-    background: #fff; border-radius: 10px;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    font-size: 2.2em; font-weight: bold;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    line-height: 1;
-    position: relative;
-  }
-  .card .rank { font-size: 1em; }
-  .card .suit { font-size: 0.75em; }
-  .card.red { color: #d00; }
-  .card.black { color: #111; }
-  .hand-label {
-    font-size: 1.3em; font-weight: bold; margin-bottom: 24px;
-    color: #f0f0f0; letter-spacing: 1px;
-  }
-  .btn-row {
-    display: flex; gap: 20px; margin-bottom: 24px;
-  }
-  .btn {
-    padding: 14px 40px; font-size: 1.1em; font-weight: bold;
-    border: none; border-radius: 10px; cursor: pointer;
-    transition: transform 0.1s, opacity 0.2s;
-    letter-spacing: 1px;
-  }
-  .btn:active { transform: scale(0.96); }
-  .btn-raise { background: #27ae60; color: #fff; }
-  .btn-fold  { background: #c0392b; color: #fff; }
-  .btn:disabled { opacity: 0.5; cursor: default; }
-  .feedback {
-    background: rgba(0,0,0,0.35); border-radius: 14px;
-    padding: 18px 22px; max-width: 480px; width: 100%;
-    margin-bottom: 20px; font-size: 0.93em; line-height: 1.7;
-    display: none;
-  }
-  .feedback.show { display: block; }
-  .feedback .verdict {
-    font-size: 1.3em; font-weight: bold; margin-bottom: 8px;
-  }
-  .verdict.correct { color: #5ddf5d; }
-  .verdict.wrong   { color: #ff6b6b; }
-  .range-table {
-    margin-top: 12px; font-size: 0.82em; color: #ccc;
-  }
-  .range-table span { margin-right: 6px; }
-  .next-btn {
-    background: #2980b9; color: #fff;
-    padding: 12px 36px; font-size: 1em; font-weight: bold;
-    border: none; border-radius: 10px; cursor: pointer;
-    letter-spacing: 1px;
-  }
-  .next-btn:hover { background: #3498db; }
-
-  /* Grid table */
-  .grid-container {
-    margin-top: 24px; width: 100%; max-width: 520px;
-  }
-  .grid-title { font-size: 0.85em; color: #aaa; margin-bottom: 6px; text-align: center; }
-  .hand-grid {
-    display: grid;
-    grid-template-columns: repeat(13, 1fr);
-    gap: 2px; font-size: 0.52em;
-  }
-  .cell {
-    aspect-ratio: 1; border-radius: 3px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: bold; color: #fff;
-    background: #2a3a2a;
-    cursor: default;
-  }
-  .cell.raise  { background: #27ae60; }
-  .cell.mixed  { background: #f39c12; }
-  .cell.limp   { background: #2980b9; }
-  .cell.fold   { background: #2a3a2a; color: #555; }
-  .cell.highlight { outline: 3px solid #fff; z-index:2; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a4a1a; color: #fff; font-family: 'Segoe UI', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px 16px 40px; }
+h1 { font-size: 1.4em; margin-bottom: 4px; }
+.top-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; }
+.score-bar { font-size: 0.9em; color: #b8f5b8; }
+.review-badge { background: #c0392b; border-radius: 20px; padding: 4px 12px; font-size: 0.82em; font-weight: bold; cursor: pointer; border: none; color: #fff; display: none; }
+.review-badge.visible { display: inline-block; }
+.mode-label { font-size: 0.78em; padding: 3px 10px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; }
+.mode-label.normal { background: #2d7a2d; color: #b8f5b8; }
+.mode-label.review { background: #8e3a00; color: #ffd6a5; }
+.position-badge { background: #2d7a2d; border: 2px solid #5adf5a; border-radius: 12px; padding: 8px 24px; font-size: 1.1em; font-weight: bold; margin-bottom: 20px; letter-spacing: 2px; }
+.position-badge.review-mode { background: #5a2000; border-color: #ff8c42; }
+.cards-row { display: flex; gap: 16px; margin-bottom: 24px; }
+.card { width: 90px; height: 126px; background: #fff; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 2.2em; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.5); line-height: 1; }
+.card .rank { font-size: 1em; } .card .suit { font-size: 0.75em; }
+.card.red { color: #d00; } .card.black { color: #111; }
+.hand-label { font-size: 1.3em; font-weight: bold; margin-bottom: 22px; color: #f0f0f0; }
+.btn-row { display: flex; gap: 20px; margin-bottom: 22px; }
+.btn { padding: 14px 40px; font-size: 1.1em; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; }
+.btn-raise { background: #27ae60; color: #fff; } .btn-fold { background: #c0392b; color: #fff; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.feedback { background: rgba(0,0,0,0.35); border-radius: 14px; padding: 18px 20px; max-width: 480px; width: 100%; margin-bottom: 18px; font-size: 0.93em; line-height: 1.7; display: none; }
+.feedback.show { display: block; }
+.verdict { font-size: 1.3em; font-weight: bold; margin-bottom: 8px; }
+.verdict.correct { color: #5ddf5d; } .verdict.wrong { color: #ff6b6b; }
+.next-btn { background: #2980b9; color: #fff; padding: 12px 36px; font-size: 1em; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-bottom: 16px; }
+.review-panel { max-width: 480px; width: 100%; background: rgba(0,0,0,0.3); border-radius: 14px; padding: 16px 18px; margin-top: 10px; display: none; }
+.review-panel.show { display: block; }
+.review-panel h3 { font-size: 0.95em; margin-bottom: 10px; color: #ffd6a5; }
+.review-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.review-chip { background: #5a2000; border: 1px solid #ff8c42; border-radius: 8px; padding: 4px 10px; font-size: 0.8em; font-weight: bold; color: #ffd6a5; cursor: pointer; }
+.review-chip:hover { background: #7a3010; }
+.review-clear-btn { margin-top: 10px; background: transparent; border: 1px solid #888; color: #aaa; border-radius: 8px; padding: 4px 12px; font-size: 0.78em; cursor: pointer; }
+.review-start-btn { margin-top: 10px; background: #8e3a00; border: none; color: #fff; border-radius: 8px; padding: 8px 18px; font-size: 0.88em; font-weight: bold; cursor: pointer; margin-right: 8px; }
+.review-count { font-size: 0.82em; color: #ffd6a5; margin-top: 6px; }
+.grid-container { margin-top: 20px; width: 100%; max-width: 480px; }
+.grid-title { font-size: 0.82em; color: #aaa; margin-bottom: 6px; text-align: center; }
+.hand-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; font-size: 0.48em; }
+.cell { aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; background: #2a3a2a; }
+.cell.raise { background: #27ae60; } .cell.mixed { background: #f39c12; } .cell.limp { background: #2980b9; } .cell.fold { background: #2a3a2a; color: #555; }
+.cell.highlight { outline: 3px solid #fff; z-index: 2; }
 </style>
 </head>
 <body>
-<h1>🃏 プリフロップクイズ</h1>
-<div class="score-bar" id="scoreBar">正解: 0 / 0</div>
+<h1>&#x1F0CF; プリフロップクイズ</h1>
+<div class="top-bar">
+  <span class="score-bar" id="scoreBar">正解: 0 / 0</span>
+  <button class="review-badge" id="reviewBadge" onclick="toggleReviewPanel()">復習リスト</button>
+</div>
+<div class="mode-label normal" id="modeLabel">通常モード</div>
 <div class="position-badge" id="posLabel">UTG</div>
-
-<div class="cards-row" id="cardsRow">
-  <div class="card black" id="card1"><span class="rank">A</span><span class="suit">♠</span></div>
-  <div class="card red"   id="card2"><span class="rank">K</span><span class="suit">♥</span></div>
+<div class="cards-row">
+  <div class="card black" id="card1"><span class="rank">A</span><span class="suit">S</span></div>
+  <div class="card red" id="card2"><span class="rank">K</span><span class="suit">H</span></div>
 </div>
-
 <div class="hand-label" id="handLabel">AKo</div>
-
 <div class="btn-row">
-  <button class="btn btn-raise" id="btnRaise" onclick="answer('raise')">🔺 レイズ</button>
-  <button class="btn btn-fold"  id="btnFold"  onclick="answer('fold')">✕ フォールド</button>
+  <button class="btn btn-raise" id="btnRaise" onclick="answer('raise')">レイズ</button>
+  <button class="btn btn-fold" id="btnFold" onclick="answer('fold')">フォールド</button>
 </div>
-
 <div class="feedback" id="feedback">
   <div class="verdict" id="verdict"></div>
   <div id="explanation"></div>
-  <div class="range-table" id="rangeDetail"></div>
 </div>
-
-<button class="next-btn" id="nextBtn" onclick="nextHand()" style="display:none">次の問題 →</button>
-
+<button class="next-btn" id="nextBtn" onclick="nextHand()" style="display:none">次の問題</button>
 <div class="grid-container" id="gridContainer" style="display:none">
   <div class="grid-title" id="gridTitle">プリフロップチャート</div>
   <div class="hand-grid" id="handGrid"></div>
 </div>
-
+<div class="review-panel" id="reviewPanel">
+  <h3>間違えた問題</h3>
+  <div class="review-list" id="reviewList"></div>
+  <div class="review-count" id="reviewCount"></div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="review-start-btn" onclick="startReviewMode()">まとめて復習する</button>
+    <button class="review-clear-btn" onclick="clearReviewList()">リセット</button>
+  </div>
+</div>
 <script>
-const RANKS = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
-const SUITS_DISPLAY = [
-  {s:'♠', color:'black'}, {s:'♥', color:'red'},
-  {s:'♦', color:'red'},   {s:'♣', color:'black'}
-];
-
-// ===== RANGE DATA =====
-// 'R' = raise, 'M' = mixed (sometimes raise), 'L' = limp/call, 'F' = fold
-// Grid index: RANKS[i] vs RANKS[j], i<j → suited, i==j → pair, i>j → offsuit
-
-function makeGrid() {
-  const g = {};
-  for (let i=0;i<13;i++) for (let j=0;j<13;j++) g[key(i,j)]='F';
-  return g;
-}
-function key(i,j) { return i+'_'+j; }
-function setRange(g, hands, action) {
-  for (const h of hands) {
-    const parsed = parseHand(h);
-    if (parsed) g[key(parsed[0],parsed[1])] = action;
-  }
-}
-function parseHand(h) {
-  if (h.length === 2) { // pair
-    const i = RANKS.indexOf(h[0]);
-    return [i,i];
-  }
-  const r1 = RANKS.indexOf(h[0]);
-  const r2 = RANKS.indexOf(h[1]);
-  const type = h[2];
-  if (type === 's') return [r1, r2]; // suited: r1<r2 guaranteed
-  if (type === 'o') return [r2, r1]; // offsuit: row > col
-  return null;
-}
-
-// Build grids for each position group
-const POSITIONS = ['UTG', 'HJ', 'CO', 'BTN', 'SB'];
-
-function buildUTG_HJ() {
-  const g = makeGrid();
-  // Pairs
-  setRange(g, ['AA','KK','QQ','JJ','TT','99','88','77','66','55'], 'R');
-  setRange(g, ['44','33','22'], 'F');
-  // Suited
-  setRange(g, ['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s'], 'R');
-  setRange(g, ['KQs','KJs','KTs','K9s'], 'R');
-  setRange(g, ['QJs','QTs','Q9s'], 'R');
-  setRange(g, ['JTs','J9s'], 'R');
-  setRange(g, ['T9s'], 'R');
-  // Offsuit
-  setRange(g, ['AKo','AQo','AJo','ATo','A9o'], 'R');
-  setRange(g, ['KQo','KJo','KTo','K9o'], 'R');
-  setRange(g, ['QJo','QTo','Q9o'], 'R');
-  setRange(g, ['JTo','J9o'], 'R');
-  setRange(g, ['T9o'], 'R');
-  return g;
-}
-
-function buildCO() {
-  const g = buildUTG_HJ();
-  // Additional raises
-  setRange(g, ['K8s','K7s','K6s','K5s'], 'R');
-  setRange(g, ['Q8s','J8s','T8s','98s'], 'M');
-  setRange(g, ['87s','76s','65s','54s'], 'M');
-  setRange(g, ['44','33','22'], 'M');
-  setRange(g, ['A8o','A7o','A6o','A5o','A4o','A3o','A2o'], 'M');
-  setRange(g, ['KTo'], 'M');
-  setRange(g, ['QJo'], 'R');
-  return g;
-}
-
-function buildBTN_SB() {
-  const g = buildCO();
-  // Even wider - most hands become raise or mixed
-  // Small pairs: full raise
-  setRange(g, ['44','33','22'], 'R');
-  // Suited connectors & one-gappers
-  setRange(g, ['K8s','K7s','K6s','K5s','K4s','K3s','K2s'], 'R');
-  setRange(g, ['Q8s','Q7s','Q6s','Q5s'], 'R');
-  setRange(g, ['J8s','J7s'], 'R');
-  setRange(g, ['T8s','T7s'], 'R');
-  setRange(g, ['98s','97s','87s','86s','76s','75s','65s','64s','54s','53s'], 'R');
-  // Offsuit
-  setRange(g, ['A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o'], 'R');
-  setRange(g, ['K9o','K8o'], 'R');
-  setRange(g, ['K7o','K6o','K5o'], 'L');
-  setRange(g, ['QJo','QTo','Q9o'], 'R');
-  setRange(g, ['Q8o'], 'L');
-  setRange(g, ['JTo','J9o','J8o'], 'R');
-  setRange(g, ['T9o','T8o'], 'R');
-  setRange(g, ['98o','97o','87o','86o','76o'], 'L');
-  return g;
-}
-
-const GRIDS = {
-  'UTG': buildUTG_HJ(),
-  'HJ':  buildUTG_HJ(),
-  'CO':  buildCO(),
-  'BTN': buildBTN_SB(),
-  'SB':  buildBTN_SB(),
-};
-
-const CHART_LABEL = {
-  'UTG': 'UTG & HJ オープンレンジ',
-  'HJ':  'UTG & HJ オープンレンジ',
-  'CO':  'CO オープンレンジ',
-  'BTN': 'BTN & SB オープンレンジ',
-  'SB':  'BTN & SB オープンレンジ',
-};
-
-// ===== STATE =====
-let currentPos, currentHand, correct, total, currentGrid;
-let score = {correct: 0, total: 0};
-
-function getAction(grid, i, j) { return grid[key(i,j)] || 'F'; }
-
-function isRaise(action) { return action === 'R' || action === 'M'; }
-
-// ===== GENERATE HAND =====
-function randomInt(n) { return Math.floor(Math.random() * n); }
-
-function nextHand() {
-  document.getElementById('feedback').classList.remove('show');
-  document.getElementById('nextBtn').style.display = 'none';
-  document.getElementById('gridContainer').style.display = 'none';
-  document.getElementById('btnRaise').disabled = false;
-  document.getElementById('btnFold').disabled = false;
-
-  // Random position
-  currentPos = POSITIONS[randomInt(POSITIONS.length)];
-  currentGrid = GRIDS[currentPos];
-
-  // Random hand
-  const r1 = randomInt(13);
-  let r2 = randomInt(13);
-  // 50% suited vs offsuit vs pair distribution weighted
-  let suited;
-  if (r1 === r2) {
-    // Try again for non-pair sometimes
-    if (Math.random() < 0.7) { r2 = randomInt(13); }
-  }
-
-  let suitIdx1 = randomInt(4);
-  let suitIdx2;
-  if (r1 === r2) {
-    // pair - different suits
-    do { suitIdx2 = randomInt(4); } while (suitIdx2 === suitIdx1);
-    suited = false;
-  } else if (Math.random() < 0.45) {
-    // suited
-    suitIdx2 = suitIdx1;
-    suited = true;
-  } else {
-    do { suitIdx2 = randomInt(4); } while (suitIdx2 === suitIdx1);
-    suited = false;
-  }
-
-  // Store as sorted (higher rank first for display)
-  const hi = Math.min(r1, r2);
-  const lo = Math.max(r1, r2);
-
-  currentHand = { r1: hi, r2: lo, suit1: suitIdx1, suit2: suitIdx2,
-    isPair: r1 === r2, suited };
-
-  // Display
-  document.getElementById('posLabel').textContent = currentPos + ' ポジション';
-  updateCardDisplay();
-  document.getElementById('handLabel').textContent = handLabel(currentHand);
-}
-
-function updateCardDisplay() {
-  const h = currentHand;
-  const c1 = document.getElementById('card1');
-  const c2 = document.getElementById('card2');
-  const s1 = SUITS_DISPLAY[h.suit1];
-  const s2 = SUITS_DISPLAY[h.suit2];
-  c1.className = 'card ' + s1.color;
-  c2.className = 'card ' + s2.color;
-  c1.innerHTML = `<span class="rank">${RANKS[h.r1]}</span><span class="suit">${s1.s}</span>`;
-  c2.innerHTML = `<span class="rank">${RANKS[h.r2]}</span><span class="suit">${s2.s}</span>`;
-}
-
-function handLabel(h) {
-  if (h.isPair) return RANKS[h.r1] + RANKS[h.r2];
-  const hi = RANKS[h.r1], lo = RANKS[h.r2];
-  return hi + lo + (h.suited ? 's' : 'o');
-}
-
-function handKey(h) {
-  if (h.isPair) return key(h.r1, h.r1);
-  if (h.suited) return key(h.r1, h.r2);
-  return key(h.r2, h.r1); // offsuit: row > col
-}
-
-// ===== ANSWER =====
-function answer(choice) {
-  document.getElementById('btnRaise').disabled = true;
-  document.getElementById('btnFold').disabled = true;
-
-  const hk = handKey(currentHand);
-  const action = getAction(currentGrid, ...hk.split('_').map(Number));
-  const shouldRaise = isRaise(action);
-
-  const isCorrect = (choice === 'raise') === shouldRaise;
-  score.total++;
-  if (isCorrect) score.correct++;
-  document.getElementById('scoreBar').textContent =
-    `正解: ${score.correct} / ${score.total}`;
-
-  // Feedback
-  const verdict = document.getElementById('verdict');
-  verdict.className = 'verdict ' + (isCorrect ? 'correct' : 'wrong');
-  verdict.textContent = isCorrect ? '✅ 正解！' : '❌ 不正解';
-
-  const label = handLabel(currentHand);
-  let actionText, reasoning;
-
-  if (action === 'R') {
-    actionText = '🔺 レイズ (標準)';
-    reasoning = buildReasoning(currentHand, currentPos, 'raise', action);
-  } else if (action === 'M') {
-    actionText = '🔺 レイズ (ミックスド戦略 — 混合戦略のためレイズが正解)';
-    reasoning = buildReasoning(currentHand, currentPos, 'mixed', action);
-  } else if (action === 'L') {
-    actionText = '✕ フォールド (BTN/SBではリンプも可だがここではフォールド判定)';
-    reasoning = buildReasoning(currentHand, currentPos, 'limp', action);
-  } else {
-    actionText = '✕ フォールド';
-    reasoning = buildReasoning(currentHand, currentPos, 'fold', action);
-  }
-
-  document.getElementById('explanation').innerHTML =
-    `<b>${label}</b> @ <b>${currentPos}</b><br>正解アクション: ${actionText}<br><br>${reasoning}`;
-
-  document.getElementById('feedback').classList.add('show');
-  document.getElementById('nextBtn').style.display = 'inline-block';
-
-  // Show grid
-  renderGrid(currentPos, currentHand);
-  document.getElementById('gridContainer').style.display = 'block';
-  document.getElementById('gridTitle').textContent = CHART_LABEL[currentPos];
-}
-
-function buildReasoning(h, pos, actionType, action) {
-  const label = handLabel(h);
-  const isPair = h.isPair;
-  const suited = h.suited;
-  const hiR = RANKS[h.r1], loR = RANKS[h.r2];
-
-  let lines = [];
-
-  if (actionType === 'raise') {
-    if (isPair) {
-      const rankIdx = h.r1;
-      if (rankIdx <= 4) lines.push(`${label} はプレミアムペアです。全ポジションで必ずレイズ。`);
-      else if (rankIdx <= 7) lines.push(`${label} はミドルペアです。${pos}のオープンレンジに含まれます。`);
-      else lines.push(`${label} は小さいペアですが、${pos}のオープンレンジ内です。`);
-    } else if (suited) {
-      lines.push(`${hiR}${loR}s はスーテッドハンドでフラッシュドローの可能性があります。`);
-      lines.push(`${pos} ではこのハンドは標準レイズです。`);
-    } else {
-      lines.push(`${hiR}${loR}o はコネクテッドなオフスーツハンドです。`);
-      lines.push(`${pos} のオープンレンジに含まれます。`);
-    }
-  } else if (actionType === 'mixed') {
-    lines.push(`${label} は<b>ミックスド戦略</b>のハンドです。`);
-    lines.push(`${pos} では状況によりレイズ/フォールドを使い分けますが、本クイズではレイズを正解とします。`);
-    lines.push(`イエロー(チャート上)で示されるハンドはGTOでも頻度ベースのレイズが推奨されます。`);
-  } else if (actionType === 'limp') {
-    lines.push(`${label} は ${pos} ではリンプ(コール)が選択肢に入りますが、基本はフォールドです。`);
-  } else {
-    // fold
-    lines.push(`${label} は ${pos} のオープンレンジ外です。`);
-    if (isPair) {
-      lines.push(`小さいペアは後ろのポジション(BTN/SB)からでないとオープンしません。`);
-    } else if (suited) {
-      lines.push(`このスーテッドハンドは両カードの強さが不十分か、接続性が低すぎます。`);
-    } else {
-      lines.push(`オフスーツハンドはスーテッドより強さの閾値が高く、このハンドはレンジ外です。`);
-    }
-    lines.push(`チャートでこのハンドのセルを確認してください（白枠でハイライトされています）。`);
-  }
-
-  // Position context
-  const posContext = {
-    'UTG': 'UTGはアーリーポジション。最も狭いレンジでオープンします。',
-    'HJ': 'HJもアーリー寄り。UTGとほぼ同じレンジです。',
-    'CO': 'COはミドルポジション。UTG/HJより少し広くオープンできます。',
-    'BTN': 'BTNはレイトポジション。最も広いレンジでオープンします。',
-    'SB': 'SBはBBに対してヘッズアップに近い形。BTNに近い広いレンジです。',
-  };
-  lines.push('<br><i>' + posContext[pos] + '</i>');
-
-  return lines.join('<br>');
-}
-
-// ===== GRID RENDER =====
-function renderGrid(pos, highlightHand) {
-  const grid = GRIDS[pos];
-  const container = document.getElementById('handGrid');
-  container.innerHTML = '';
-
-  const hk = handKey(highlightHand);
-
-  for (let i=0; i<13; i++) {
-    for (let j=0; j<13; j++) {
-      const cell = document.createElement('div');
-      let label, action;
-      if (i === j) {
-        label = RANKS[i]+RANKS[j];
-        action = grid[key(i,j)];
-      } else if (i < j) {
-        label = RANKS[i]+RANKS[j]+'s';
-        action = grid[key(i,j)];
-      } else {
-        label = RANKS[j]+RANKS[i]+'o';
-        action = grid[key(i,j)];
-      }
-
-      const actionClass = {R:'raise', M:'mixed', L:'limp', F:'fold'}[action] || 'fold';
-      cell.className = 'cell ' + actionClass;
-      cell.textContent = label;
-
-      // Highlight current hand
-      const thisKey = key(i,j);
-      if (thisKey === hk) cell.classList.add('highlight');
-
-      container.appendChild(cell);
-    }
-  }
-}
-
-// ===== INIT =====
-nextHand();
+const R=['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+const SUITS=[['spade','black'],['heart','red'],['diamond','red'],['club','black']];
+function mg(){const g={};for(let i=0;i<13;i++)for(let j=0;j<13;j++)g[i+'_'+j]='F';return g;}
+function sr(g,hs,a){for(const h of hs){if(h.length===2){const i=R.indexOf(h[0]);g[i+'_'+i]=a;}else{const r1=R.indexOf(h[0]),r2=R.indexOf(h[1]),t=h[2];if(t==='s')g[r1+'_'+r2]=a;else if(t==='o')g[r2+'_'+r1]=a;}}}
+function bU(){const g=mg();sr(g,['AA','KK','QQ','JJ','TT','99','88','77','66','55'],'R');sr(g,['AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s'],'R');sr(g,['KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s'],'R');sr(g,['AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','K9o','QJo','QTo','Q9o','JTo','J9o','T9o'],'R');return g;}
+function bC(){const g=bU();sr(g,['K8s','K7s','K6s','K5s'],'R');sr(g,['Q8s','J8s','T8s','98s','87s','76s','65s','54s','44','33','22'],'M');sr(g,['A8o','A7o','A6o','A5o','A4o','A3o','A2o','KTo'],'M');return g;}
+function bB(){const g=bC();sr(g,['44','33','22'],'R');sr(g,['K4s','K3s','K2s','Q8s','Q7s','Q6s','Q5s','J8s','J7s','T8s','T7s','98s','97s','87s','86s','76s','75s','65s','64s','54s','53s'],'R');sr(g,['A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o','K9o','K8o','QJo','QTo','Q9o','JTo','J9o','J8o','T9o','T8o'],'R');sr(g,['K7o','K6o','K5o','Q8o','98o','97o','87o','86o','76o'],'L');return g;}
+const POS=['UTG','HJ','CO','BTN','SB'];
+const GR={'UTG':bU(),'HJ':bU(),'CO':bC(),'BTN':bB(),'SB':bB()};
+const CL={'UTG':'UTG & HJ','HJ':'UTG & HJ','CO':'CO','BTN':'BTN & SB','SB':'BTN & SB'};
+const SS=['spadesuit','heartsuit','diamondsuit','clubsuit'];
+let cP,cH,score={c:0,t:0},isRev=false,revQ=[],revI=0;
+const SK='poker_wrong_list';
+function lWL(){try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}}
+function sWL(l){localStorage.setItem(SK,JSON.stringify(l));}
+function hl(h){if(h.p)return R[h.r1]+R[h.r2];return R[h.r1]+R[h.r2]+(h.s?'s':'o');}
+function hk(h){if(h.p)return h.r1+'_'+h.r1;if(h.s)return h.r1+'_'+h.r2;return h.r2+'_'+h.r1;}
+function addWL(hand,pos){const l=lWL(),id=hl(hand)+'@'+pos;if(!l.find(x=>x.id===id)){l.push({id,hand,pos});sWL(l);}uB();if(document.getElementById('reviewPanel').classList.contains('show'))rRP();}
+function clearReviewList(){if(!confirm('リセットしますか?'))return;localStorage.removeItem(SK);uB();rRP();if(isRev)eRev();}
+function uB(){const l=lWL(),b=document.getElementById('reviewBadge');if(l.length>0){b.classList.add('visible');b.textContent='復習リスト('+l.length+')';}else b.classList.remove('visible');}
+function toggleReviewPanel(){const p=document.getElementById('reviewPanel');if(p.classList.contains('show'))p.classList.remove('show');else{rRP();p.classList.add('show');}}
+function rRP(){const l=lWL(),c=document.getElementById('reviewList'),ct=document.getElementById('reviewCount');c.innerHTML='';if(l.length===0){c.innerHTML='<span style="color:#888">まだ間違えた問題はありません</span>';ct.textContent='';return;}ct.textContent=l.length+'問の間違いを記録中';for(const item of l){const ch=document.createElement('div');ch.className='review-chip';ch.textContent=item.id;ch.onclick=()=>pSingle(item);c.appendChild(ch);}}
+function startReviewMode(){const l=lWL();if(l.length===0){alert('復習リストが空です');return;}isRev=true;revQ=[...l].sort(()=>Math.random()-0.5);revI=0;document.getElementById('reviewPanel').classList.remove('show');document.getElementById('modeLabel').className='mode-label review';document.getElementById('modeLabel').textContent='復習モード('+revQ.length+'問)';document.getElementById('posLabel').classList.add('review-mode');lRH();}
+function pSingle(item){isRev=true;revQ=[item];revI=0;document.getElementById('reviewPanel').classList.remove('show');document.getElementById('modeLabel').className='mode-label review';document.getElementById('modeLabel').textContent='復習モード(1問)';document.getElementById('posLabel').classList.add('review-mode');lRH();}
+function lRH(){if(revI>=revQ.length){eRev();alert('復習完了!');return;}cP=revQ[revI].pos;cH=revQ[revI].hand;showH();}
+function eRev(){isRev=false;revQ=[];revI=0;document.getElementById('modeLabel').className='mode-label normal';document.getElementById('modeLabel').textContent='通常モード';document.getElementById('posLabel').classList.remove('review-mode');nextHand();}
+function ri(n){return Math.floor(Math.random()*n);}
+function sDisp(si){return ['&#9824;','&#9829;','&#9830;','&#9827;'][si];}
+function sCol(si){return si===0||si===3?'black':'red';}
+function nextHand(){if(isRev){lRH();return;}['feedback','nextBtn','gridContainer'].forEach(id=>{const el=document.getElementById(id);if(el.tagName==='BUTTON'||el.tagName==='DIV')el.style.display='none';el.classList&&el.classList.remove('show');});document.getElementById('btnRaise').disabled=false;document.getElementById('btnFold').disabled=false;cP=POS[ri(5)];const r1=ri(13);let r2=ri(13);if(r1===r2&&Math.random()<0.7)r2=ri(13);let s1=ri(4),s2;if(r1===r2){do{s2=ri(4);}while(s2===s1);}else if(Math.random()<0.45)s2=s1;else{do{s2=ri(4);}while(s2===s1);}cH={r1:Math.min(r1,r2),r2:Math.max(r1,r2),s1,s2,p:r1===r2,s:r1!==r2&&s1===s2};showH();}
+function showH(){document.getElementById('feedback').classList.remove('show');document.getElementById('nextBtn').style.display='none';document.getElementById('gridContainer').style.display='none';document.getElementById('btnRaise').disabled=false;document.getElementById('btnFold').disabled=false;document.getElementById('posLabel').textContent=cP+' Position';const h=cH,c1=document.getElementById('card1'),c2=document.getElementById('card2');c1.className='card '+sCol(h.s1);c2.className='card '+sCol(h.s2);c1.innerHTML='<span class="rank">'+R[h.r1]+'</span><span class="suit">'+sDisp(h.s1)+'</span>';c2.innerHTML='<span class="rank">'+R[h.r2]+'</span><span class="suit">'+sDisp(h.s2)+'</span>';document.getElementById('handLabel').textContent=hl(cH);}
+function answer(choice){document.getElementById('btnRaise').disabled=true;document.getElementById('btnFold').disabled=true;const k=hk(cH),action=GR[cP][k]||'F',sR=action==='R'||action==='M',isC=(choice==='raise')===sR;score.t++;if(isC){score.c++;sWL(lWL().filter(x=>x.id!==hl(cH)+'@'+cP));uB();}else addWL(cH,cP);document.getElementById('scoreBar').textContent='正解: '+score.c+' / '+score.t;const v=document.getElementById('verdict');v.className='verdict '+(isC?'correct':'wrong');v.textContent=isC?'正解!':'不正解';let at=action==='R'?'レイズ':action==='M'?'レイズ(ミックスド)':action==='L'?'フォールド(リンプも可)':'フォールド';document.getElementById('explanation').innerHTML='<b>'+hl(cH)+'</b> @ <b>'+cP+'</b><br>正解: '+at+'<br><br>'+bRe(cH,cP,action);document.getElementById('feedback').classList.add('show');const nb=document.getElementById('nextBtn');if(isRev){revI++;const rem=revQ.length-revI;nb.textContent=rem>0?'次の復習('+'残り'+rem+'問)':'復習完了';}else nb.textContent='次の問題';nb.style.display='inline-block';rGrid(cP,cH);document.getElementById('gridContainer').style.display='block';}
+function bRe(h,pos,action){const label=hl(h),hi=R[h.r1],lo=R[h.r2];let L=[];if(action==='R'){if(h.p)L.push(label+' は'+pos+'のレンジに含まれるペアです。');else if(h.s)L.push(hi+lo+'s はスーテッドで'+pos+'からレイズできます。');else L.push(hi+lo+'o は'+pos+'のオフスーツレンジに含まれます。');}else if(action==='M'){L.push(label+' はミックスド戦略のハンド(チャート:黄色)。');L.push(pos+'ではレイズ/フォールドを状況で使い分けますが、本クイズではレイズを正解とします。');}else if(action==='L')L.push(label+' は'+pos+'ではリンプも選択肢ですが、基本はフォールド判定です。');else{L.push(label+' は'+pos+'のオープンレンジ外です。');if(h.p)L.push('小さいペアはBTN/SBなど後ろのポジションからオープンします。');else if(h.s)L.push('このスーテッドハンドは強さや接続性が不十分です。');else L.push('オフスーツハンドは閾値が高く、このハンドはレンジ外です。');}const pc={'UTG':'UTGはアーリー。最も狭いレンジ。','HJ':'HJもアーリー寄り。','CO':'COはミドル。UTG/HJより少し広い。','BTN':'BTNはレイト。最も広いレンジ。','SB':'SBはBTNに近い広いレンジ。'};L.push('<br><i>'+pc[pos]+'</i>');return L.join('<br>');}
+function rGrid(pos,h){const grid=GR[pos],con=document.getElementById('handGrid');con.innerHTML='';document.getElementById('gridTitle').textContent=CL[pos]+' オープンレンジ';const k=hk(h);for(let i=0;i<13;i++)for(let j=0;j<13;j++){const cell=document.createElement('div');let lb,ck;if(i===j){lb=R[i]+R[j];ck=i+'_'+j;}else if(i<j){lb=R[i]+R[j]+'s';ck=i+'_'+j;}else{lb=R[j]+R[i]+'o';ck=i+'_'+j;}const a=grid[ck]||'F';cell.className='cell '+({R:'raise',M:'mixed',L:'limp',F:'fold'}[a]);cell.textContent=lb;if(ck===k)cell.classList.add('highlight');con.appendChild(cell);}}
+uB();nextHand();
 </script>
 </body>
 </html>
