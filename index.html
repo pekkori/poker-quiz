@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ポーカーハンドレンジクイズ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: radial-gradient(ellipse at center, #1b5e20 0%, #0d3b0d 55%, #071a07 100%);
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16px 12px; color: #fff;
+  }
+  h1 { font-size: 1.2rem; letter-spacing: 2px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); margin-bottom: 6px; }
+  #stats-bar { display: flex; gap: 8px; margin-bottom: 10px; font-size: 0.78rem; flex-wrap: wrap; justify-content: center; }
+  #stats-bar span { background: rgba(0,0,0,0.38); padding: 3px 9px; border-radius: 20px; }
+  #tabs { display: flex; gap: 7px; margin-bottom: 12px; }
+  .tab-btn { padding: 6px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.28);
+    background: rgba(0,0,0,0.22); color: #fff; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent; }
+  .tab-btn.active { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.7); }
+  .tab-btn:hover { background: rgba(255,255,255,0.14); }
+
+  #cards-area { display: flex; gap: 16px; justify-content: center; margin-bottom: 14px; align-items: center; }
+  .card-svg {
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.8)) drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+    width: 130px; height: 182px;
+  }
+
+  #hand-label { font-size: 0.92rem; opacity: 0.72; margin-bottom: 10px; letter-spacing: 1px; text-align: center; }
+  #feedback { min-height: 24px; font-size: 1rem; font-weight: 700; text-align: center;
+    margin-bottom: 8px; text-shadow: 0 2px 6px rgba(0,0,0,0.6); padding: 0 8px; }
+
+  #answer-area { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    max-width: 490px; width: 100%; margin-bottom: 14px; }
+  .ans-btn { padding: 12px 4px; border-radius: 10px; border: 3px solid transparent; cursor: pointer;
+    font-size: 0.82rem; font-weight: 700; transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  .ans-btn:active:not(:disabled) { transform: scale(0.95); }
+  .ans-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,0.55); }
+  .ans-btn:disabled { cursor: default; }
+  .ans-btn.correct { animation: pop 0.4s ease; border-color: #76ff03 !important; box-shadow: 0 0 18px #76ff03; }
+  .ans-btn.wrong   { animation: shake 0.4s ease; filter: brightness(0.42); }
+  .ans-btn.reveal  { border-color: #76ff03 !important; box-shadow: 0 0 14px #76ff03; }
+  @keyframes pop   { 0%{transform:scale(1)} 40%{transform:scale(1.1)} 100%{transform:scale(1)} }
+  @keyframes shake { 0%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} 100%{transform:translateX(0)} }
+
+  #next-btn { display: none; padding: 13px 40px; border-radius: 30px; border: none;
+    background: linear-gradient(135deg,#ffd600,#ffab00); color: #222; font-size: 1rem;
+    font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(255,214,0,0.5);
+    transition: transform 0.15s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  #next-btn:active { transform: scale(0.96); }
+
+  #review-panel,#history-panel { display: none; width: 100%; max-width: 510px; }
+  #review-panel h2,#history-panel h2 { text-align: center; margin-bottom: 12px; font-size: 0.98rem; opacity: 0.9; }
+  #review-list,#history-list { display: flex; flex-direction: column; gap: 7px; max-height: 55vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch; }
+  .review-item { background: rgba(0,0,0,0.35); border-radius: 10px; padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .review-hand { font-size: 0.98rem; font-weight: 700; min-width: 55px; }
+  .rev-badge { padding: 3px 9px; border-radius: 12px; font-size: 0.74rem; font-weight: 700; }
+  .history-item { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px 11px;
+    display: flex; align-items: center; gap: 8px; font-size: 0.81rem; }
+  .clr-btn { margin-top: 12px; padding: 8px 22px; border-radius: 20px;
+    border: 2px solid rgba(255,255,255,0.28); background: rgba(255,0,0,0.18); color: #fff;
+    cursor: pointer; font-size: 0.82rem; touch-action: manipulation; }
+  .clr-btn:active { background: rgba(255,0,0,0.38); }
+  #quiz-panel { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+  /* ── スマホ用レスポンシブ ── */
+  @media (max-width: 420px) {
+    body { padding: 10px 8px; }
+    h1 { font-size: 1rem; letter-spacing: 1px; margin-bottom: 5px; }
+    #stats-bar { gap: 5px; font-size: 0.72rem; margin-bottom: 8px; }
+    #stats-bar span { padding: 2px 7px; }
+    #tabs { gap: 5px; margin-bottom: 10px; }
+    .tab-btn { padding: 6px 11px; font-size: 0.74rem; }
+    .card-svg { width: 105px; height: 147px; }
+    #cards-area { gap: 12px; margin-bottom: 12px; }
+    #hand-label { font-size: 0.82rem; margin-bottom: 8px; }
+    #feedback { font-size: 0.92rem; }
+    #answer-area { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 100%; margin-bottom: 12px; }
+    .ans-btn { padding: 14px 6px; font-size: 0.88rem; border-radius: 12px; }
+    #next-btn { padding: 13px 36px; font-size: 0.95rem; }
+    .review-item { padding: 9px 10px; }
+    .history-item { font-size: 0.78rem; }
+  }
+
+  @media (max-width: 340px) {
+    .card-svg { width: 88px; height: 123px; }
+    #cards-area { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<h1>🃏 ポーカーハンドレンジクイズ</h1>
+<div id="stats-bar">
+  <span id="st-total">合計: 0問</span>
+  <span id="st-correct">正解: 0問</span>
+  <span id="st-rate">正答率: -%</span>
+  <span id="st-review">復習: 0件</span>
+</div>
+<div id="tabs">
+  <button class="tab-btn active" onclick="showTab('quiz')">クイズ</button>
+  <button class="tab-btn" onclick="showTab('review')">復習モード</button>
+  <button class="tab-btn" onclick="showTab('history')">履歴</button>
+</div>
+<div id="quiz-panel">
+  <div id="cards-area"></div>
+  <div id="hand-label"></div>
+  <div id="feedback"></div>
+  <div id="answer-area"></div>
+  <button id="next-btn" onclick="nextQ()">次の問題 →</button>
+</div>
+<div id="review-panel">
+  <h2>❌ 間違えたハンド一覧</h2>
+  <div id="review-list"></div>
+  <div style="text-align:center"><button class="clr-btn" onclick="clearReview()">復習リストをクリア</button></div>
+</div>
+<div id="history-panel">
+  <h2>📋 回答履歴</h2>
+  <div id="history-list"></div>
+  <div style="text-align:center"><button class="clr-btn" onclick="clearHistory()">履歴をクリア</button></div>
+</div>
+
+<script>
+/* ═══════════════════════════ DATA ═══════════════════════════ */
+const CATS = [
+  {id:'navy',  label:'紺色',   bg:'#0d1b5e',border:'#1a237e',text:'#fff',
+   hands:['AA','AKs','AKo','KK','QQ']},
+  {id:'red',   label:'赤',     bg:'#b71c1c',border:'#c62828',text:'#fff',
+   hands:['AQs','AJs','ATs','KQs','AQo','JJ','TT','99']},
+  {id:'yellow',label:'黄色',   bg:'#f9a825',border:'#f57f17',text:'#000',
+   hands:['KJs','KQo','QJs','AJo','JTs','88','77']},
+  {id:'green', label:'緑',     bg:'#1b5e20',border:'#2e7d32',text:'#fff',
+   hands:['A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KTs','K9s','QTs','KJo','ATo','T9s','66','55']},
+  {id:'lblue', label:'水色',   bg:'#01579b',border:'#0277bd',text:'#fff',
+   hands:['Q9s','QJo','J9s','KTo','JTo','T8s','A9o','98s','44','33','22']},
+  {id:'white', label:'白',     bg:'#e0e0e0',border:'#bdbdbd',text:'#222',
+   hands:['K8s','K7s','K6s','K5s','K4s','K3s','K2s','Q8s','Q7s','Q6s','J8s','J7s','QTo','K9o','Q9o','J9o','T9o','97s','A8o','87s','A7o','76s','65s']},
+  {id:'pink',  label:'ピンク枠',bg:'#fff',  border:'#e91e63',text:'#c2185b',isPink:true,
+   hands:['A6o','98o','45s','64s','57s','68s','96s','T7s','J6s','Q5s','Q4s','Q3s','Q2s']},
+];
+const H2C = {};
+CATS.forEach(c => c.hands.forEach(h => { H2C[h] = c; }));
+const ALL = Object.keys(H2C);
+
+/* ═══════════════════════════ CARD SVG ═══════════════════════ */
+const SUITS = ['♠','♥','♦','♣'];
+const RED_S = new Set(['♥','♦']);
+function rS() { return SUITS[Math.floor(Math.random()*4)]; }
+function dS(s) { let r; do{r=rS();}while(r===s); return r; }
+
+/* Pip positions [x, y, flipped] for W=130, H=182 card */
+const PIPS = {
+  A:[[65,91,0]],
+  '2':[[65,55,0],[65,127,1]],
+  '3':[[65,50,0],[65,91,0],[65,132,1]],
+  '4':[[36,57,0],[94,57,0],[36,125,1],[94,125,1]],
+  '5':[[36,57,0],[94,57,0],[65,91,0],[36,125,1],[94,125,1]],
+  '6':[[36,53,0],[94,53,0],[36,91,0],[94,91,0],[36,129,1],[94,129,1]],
+  '7':[[36,53,0],[94,53,0],[65,70,0],[36,91,0],[94,91,0],[36,129,1],[94,129,1]],
+  '8':[[36,53,0],[94,53,0],[65,68,0],[36,91,0],[94,91,0],[65,114,1],[36,129,1],[94,129,1]],
+  '9':[[36,51,0],[94,51,0],[36,72,0],[94,72,0],[65,91,0],[36,110,1],[94,110,1],[36,131,1],[94,131,1]],
+  T:  [[36,51,0],[94,51,0],[65,61,0],[36,72,0],[94,72,0],[36,110,1],[94,110,1],[65,121,1],[36,131,1],[94,131,1]],
+};
+
+function pipInner(rank, suit, col) {
+  const list = PIPS[rank] || [];
+  const isAce = rank === 'A';
+  const fs = isAce ? 56 : 18;
+  return list.map(([x,y,flip]) =>
+    `<text x="${x}" y="${y}" font-size="${fs}" fill="${col}"
+      text-anchor="middle" dominant-baseline="middle"
+      ${flip ? `transform="rotate(180,${x},${y})"` : ''}>${suit}</text>`
+  ).join('');
+}
+
+/* ─── Face-card figures, drawn centered at (0,0) ─── */
+function kingFig(suit, isRed) {
+  const robeL = isRed ? '#cc0000' : '#111111';
+  const robeR = isRed ? '#8B0000' : '#cc0000';
+  const gld = '#DAA520';
+  const hairCol = '#e8e8e8';
+  return `
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-16,-24 C-24,-14 -26,-2 -23,12 C-21,22 -19,30 -17,35" stroke="${hairCol}" stroke-width="7" fill="none" opacity="0.95"/>
+    <path d="M-14,-24 C-20,-12 -22,2 -19,18" stroke="${hairCol}" stroke-width="4" fill="none" opacity="0.8"/>
+    <path d="M16,-24 C24,-14 26,-2 23,12 C21,22 19,30 17,35" stroke="${hairCol}" stroke-width="7" fill="none" opacity="0.95"/>
+    <path d="M14,-24 C20,-12 22,2 19,18" stroke="${hairCol}" stroke-width="4" fill="none" opacity="0.8"/>
+    <rect x="-18" y="-25" width="36" height="7" fill="${gld}" stroke="black" stroke-width="1.2" rx="1"/>
+    <circle cx="-14" cy="-30" r="5.5" fill="${gld}" stroke="black" stroke-width="1.2"/>
+    <circle cx="-7"  cy="-35" r="5.5" fill="${gld}" stroke="black" stroke-width="1.2"/>
+    <circle cx="0"   cy="-37" r="5.5" fill="${gld}" stroke="black" stroke-width="1.2"/>
+    <circle cx="7"   cy="-35" r="5.5" fill="${gld}" stroke="black" stroke-width="1.2"/>
+    <circle cx="14"  cy="-30" r="5.5" fill="${gld}" stroke="black" stroke-width="1.2"/>
+    <text x="-14" y="-28" font-size="6" fill="black" text-anchor="middle">♣</text>
+    <text x="-7"  y="-33" font-size="6" fill="black" text-anchor="middle">♣</text>
+    <text x="0"   y="-35" font-size="6" fill="black" text-anchor="middle">♣</text>
+    <text x="7"   y="-33" font-size="6" fill="black" text-anchor="middle">♣</text>
+    <text x="14"  y="-28" font-size="6" fill="black" text-anchor="middle">♣</text>
+    <rect x="-18" y="-21" width="36" height="3" fill="#cc0000" stroke="none"/>
+    <circle cx="-13" cy="-18" r="2.2" fill="black"/>
+    <circle cx="-6"  cy="-18" r="2.2" fill="black"/>
+    <circle cx="0"   cy="-18" r="2.2" fill="black"/>
+    <circle cx="6"   cy="-18" r="2.2" fill="black"/>
+    <circle cx="13"  cy="-18" r="2.2" fill="black"/>
+    <ellipse cx="1" cy="-7" rx="13" ry="13.5" fill="#FFD8A8" stroke="black" stroke-width="1.2"/>
+    <path d="M-11,1 Q-11,10 -5,13 Q0,15 5,13 Q11,10 11,1" fill="#b8b8b8" stroke="#999" stroke-width="0.8"/>
+    <path d="M-8,4 Q0,12 8,4" stroke="#aaa" stroke-width="0.6" fill="none"/>
+    <path d="M-6,7 Q0,13 6,7" stroke="#aaa" stroke-width="0.6" fill="none"/>
+    <path d="M-9,-3 Q-5,0 0,-1 Q5,0 9,-3" fill="#aaa" stroke="#999" stroke-width="0.7"/>
+    <ellipse cx="-3" cy="-11" rx="2.4" ry="2.7" fill="black"/>
+    <ellipse cx="6"  cy="-11" rx="2.4" ry="2.7" fill="black"/>
+    <circle cx="-2"  cy="-12" r="0.9" fill="white"/>
+    <circle cx="7"   cy="-12" r="0.9" fill="white"/>
+    <path d="M-6,-15 Q-3,-17 0,-16" stroke="black" stroke-width="1.3" fill="none"/>
+    <path d="M4,-15 Q7,-17 9,-16"   stroke="black" stroke-width="1.3" fill="none"/>
+    <path d="M3,-6 L6,-2 L9,-3" stroke="#cc9966" stroke-width="0.9" fill="none"/>
+    <path d="M13,-10 Q17,-9 17,-5 Q17,-1 13,0" stroke="black" stroke-width="1.1" fill="#FFD8A8"/>
+    <path d="M-21,2 L-28,35 L-1,35 L-1,2 Z" fill="${robeL}" stroke="black" stroke-width="1.2"/>
+    <path d="M21,2 L28,35 L1,35 L1,2 Z" fill="${robeR}" stroke="black" stroke-width="1.2"/>
+    <rect x="-2" y="2" width="4" height="33" fill="${gld}"/>
+    <circle cx="-15" cy="14" r="6" fill="#1a237e" stroke="${gld}" stroke-width="1"/>
+    <circle cx="-15" cy="28" r="6" fill="#1a237e" stroke="${gld}" stroke-width="1"/>
+    <text x="-15" y="16.5" font-size="8" fill="white" text-anchor="middle">${suit}</text>
+    <text x="-15" y="30.5" font-size="8" fill="white" text-anchor="middle">${suit}</text>
+    <path d="M6,12 Q16,12 18,18 Q16,24 6,24 Q4,18 6,12 Z" fill="${gld}" stroke="black" stroke-width="0.6"/>
+    <circle cx="11" cy="18" r="2.5" fill="${robeR}"/>
+    <path d="M-21,2 Q0,7 21,2 L21,7 Q0,12 -21,7 Z" fill="${gld}" stroke="black" stroke-width="1"/>
+    <rect x="-26" y="16" width="54" height="2.5" fill="${gld}" opacity="0.65"/>
+    <rect x="-26" y="27" width="54" height="2.5" fill="${gld}" opacity="0.5"/>
+    <line x1="30" y1="35" x2="31" y2="-8"  stroke="#d0d0d0" stroke-width="2.6"/>
+    <line x1="31" y1="-8"  x2="31" y2="-30" stroke="#d0d0d0" stroke-width="2"/>
+    <path d="M26,-8 L36,-8 L35,-5 L27,-5 Z" fill="${gld}" stroke="black" stroke-width="0.8"/>
+    <rect x="29" y="-22" width="5" height="16" rx="2.5" fill="${gld}" stroke="black" stroke-width="0.8"/>
+    <ellipse cx="31" cy="-24" rx="5.5" ry="4.5" fill="${gld}" stroke="black" stroke-width="0.9"/>
+    <path d="M30,-30 L31,-38 L32,-30 Z" fill="#d0d0d0" stroke="#bbb" stroke-width="0.5"/>
+  </g>`;
+}
+
+function queenFig(suit, isRed) {
+  const gld    = '#DAA520';
+  const dressB = '#cc0000';
+  const trim   = '#111111';
+  const hairCol = '#3a1a00';
+  const florC  = '#cc0000';
+  return `
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-12,-22 C-18,-12 -20,2 -17,16 L-14,35" stroke="${hairCol}" stroke-width="7" fill="none"/>
+    <path d="M12,-22 C18,-12 20,2 17,16 L14,35" stroke="${hairCol}" stroke-width="7" fill="none"/>
+    <path d="M-10,-22 C-15,-10 -17,6 -14,20" stroke="#5a2800" stroke-width="4" fill="none"/>
+    <path d="M10,-22 C15,-10 17,6 14,20"  stroke="#5a2800" stroke-width="4" fill="none"/>
+    <rect x="-16" y="-25" width="32" height="6" fill="${gld}" stroke="black" stroke-width="1.1"/>
+    <path d="M-14,-25 L-14,-38 L-10,-32 L-6,-40 L-2,-32 L0,-42 L2,-32 L6,-40 L10,-32 L14,-38 L14,-25 Z" fill="${gld}" stroke="black" stroke-width="1.1"/>
+    <circle cx="-6"  cy="-36" r="2.2" fill="#cc0000"/>
+    <circle cx="0"   cy="-40" r="2.5" fill="#cc0000"/>
+    <circle cx="6"   cy="-36" r="2.2" fill="#cc0000"/>
+    <circle cx="-12" cy="-32" r="1.8" fill="#2244cc"/>
+    <circle cx="12"  cy="-32" r="1.8" fill="#2244cc"/>
+    <circle cx="-11" cy="-22" r="2" fill="black"/>
+    <circle cx="-4"  cy="-22" r="2" fill="black"/>
+    <circle cx="4"   cy="-22" r="2" fill="black"/>
+    <circle cx="11"  cy="-22" r="2" fill="black"/>
+    <ellipse cx="0" cy="-8" rx="12" ry="13" fill="#FFD8A8" stroke="black" stroke-width="1.2"/>
+    <ellipse cx="-7" cy="-5" rx="3.5" ry="2.2" fill="#ffaacc" opacity="0.4"/>
+    <ellipse cx="7"  cy="-5" rx="3.5" ry="2.2" fill="#ffaacc" opacity="0.4"/>
+    <ellipse cx="-4" cy="-12" rx="2.5" ry="2.3" fill="black"/>
+    <ellipse cx="4"  cy="-12" rx="2.5" ry="2.3" fill="black"/>
+    <circle  cx="-3" cy="-13" r="0.9" fill="white"/>
+    <circle  cx="5"  cy="-13" r="0.9" fill="white"/>
+    <path d="M-7,-15 L-8,-17 M-5,-16 L-5,-18 M-3,-15 L-3,-17" stroke="black" stroke-width="0.8"/>
+    <path d="M7,-15 L8,-17 M5,-16 L5,-18 M3,-15 L3,-17"  stroke="black" stroke-width="0.8"/>
+    <path d="M-7,-16 Q-4,-19 -1,-17" stroke="black" stroke-width="1.2" fill="none"/>
+    <path d="M7,-16 Q4,-19 1,-17"    stroke="black" stroke-width="1.2" fill="none"/>
+    <path d="M0,-5 L-2,-2 L2,-2" stroke="#cc9977" stroke-width="0.75" fill="none"/>
+    <path d="M-4.5,1 Q0,3.5 4.5,1" stroke="${florC}" stroke-width="1.8" fill="${florC}" fill-opacity="0.4"/>
+    <path d="M-4.5,1 Q0,-1.5 4.5,1" stroke="${florC}" stroke-width="0.9" fill="none"/>
+    <path d="M-12,2 Q0,7 12,2 L14,7 Q0,12 -14,7 Z" fill="white" stroke="black" stroke-width="0.9"/>
+    <path d="M-20,7 L-13,14 L-20,21 L-27,14 Z" fill="${gld}" stroke="${trim}" stroke-width="0.8"/>
+    <path d="M-20,21 L-13,28 L-20,35 L-27,28 Z" fill="${dressB}" stroke="${trim}" stroke-width="0.8"/>
+    <path d="M-7,7 L0,14 L-7,21 L-14,14 Z" fill="${dressB}" stroke="${trim}" stroke-width="0.8"/>
+    <path d="M7,7 L0,14 L7,21 L14,14 Z"   fill="${dressB}" stroke="${trim}" stroke-width="0.8"/>
+    <path d="M-7,21 L0,28 L-7,35 L-14,28 Z" fill="${gld}" stroke="${trim}" stroke-width="0.8"/>
+    <path d="M7,21 L0,28 L7,35 L14,28 Z"   fill="${gld}" stroke="${trim}" stroke-width="0.8"/>
+    <path d="M20,7 L13,14 L20,21 L27,14 Z" fill="${gld}" stroke="${trim}" stroke-width="0.8"/>
+    <path d="M20,21 L13,28 L20,35 L27,28 Z" fill="${dressB}" stroke="${trim}" stroke-width="0.8"/>
+    <path d="M0,7 L7,0 L0,-7 L-7,0 Z" fill="${gld}" stroke="${trim}" stroke-width="0.8"/>
+    <g transform="translate(24,8)">
+      <circle cx="-3" cy="0"  r="3.5" fill="${florC}" stroke="black" stroke-width="0.7"/>
+      <circle cx="3"  cy="0"  r="3.5" fill="${florC}" stroke="black" stroke-width="0.7"/>
+      <circle cx="0"  cy="-3" r="3.5" fill="${florC}" stroke="black" stroke-width="0.7"/>
+      <circle cx="0"  cy="3"  r="3.5" fill="${florC}" stroke="black" stroke-width="0.7"/>
+      <circle cx="0"  cy="0"  r="4"   fill="${gld}"   stroke="black" stroke-width="0.8"/>
+      <line x1="0" y1="3" x2="0" y2="18" stroke="#2e7d32" stroke-width="1.6"/>
+    </g>
+  </g>`;
+}
+
+function jackFig(suit, isRed) {
+  const gld  = '#DAA520';
+  const pri  = isRed ? '#cc0000' : '#111111';
+  const sec  = isRed ? '#DAA520' : '#cc0000';
+  const fClr = isRed ? '#cc0000' : '#DAA520';
+  const hairCol = '#7a4010';
+  return `
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-12,-20 C-17,-10 -18,4 -15,18" stroke="${hairCol}" stroke-width="5" fill="none"/>
+    <path d="M12,-20 C17,-10 18,4 15,18"     stroke="${hairCol}" stroke-width="5" fill="none"/>
+    <path d="M-15,-42 Q-15,-50 0,-52 Q15,-50 15,-42 L13,-26 L-13,-26 Z" fill="${pri}" stroke="black" stroke-width="1.3"/>
+    <path d="M-17,-26 L17,-26 L16,-22 L-16,-22 Z" fill="${sec}" stroke="black" stroke-width="1.1"/>
+    <rect x="-13" y="-25" width="26" height="4" fill="${gld}" stroke="none" opacity="0.8"/>
+    <path d="M-3,-52 Q0,-56 3,-52" stroke="${gld}" stroke-width="1.5" fill="none"/>
+    <path d="M11,-42 C22,-52 32,-58 28,-68 C25,-56 20,-50 14,-44" fill="${fClr}" stroke="${isRed?'#aa0000':'#aa8800'}" stroke-width="1" opacity="0.9"/>
+    <path d="M12,-44 C22,-53 30,-58 27,-66" stroke="${isRed?'#880000':'#886600'}" stroke-width="0.8" fill="none"/>
+    <ellipse cx="1" cy="-10" rx="12" ry="13" fill="#FFD8A8" stroke="black" stroke-width="1.2"/>
+    <ellipse cx="-2" cy="-13" rx="2.4" ry="2.6" fill="black"/>
+    <ellipse cx="6"  cy="-13" rx="2.4" ry="2.6" fill="black"/>
+    <circle  cx="-1" cy="-14" r="0.9" fill="white"/>
+    <circle  cx="7"  cy="-14" r="0.9" fill="white"/>
+    <path d="M-5,-17 Q-2,-20 2,-18"  stroke="${hairCol}" stroke-width="1.2" fill="none"/>
+    <path d="M4,-17 Q7,-20 9,-18"    stroke="${hairCol}" stroke-width="1.2" fill="none"/>
+    <path d="M3,-8 L5,-5 L8,-6" stroke="#cc9966" stroke-width="0.85" fill="none"/>
+    <path d="M-2,-2 Q3,1 6,-1" stroke="#aa5544" stroke-width="1.3" fill="none"/>
+    <path d="M13,-12 Q17,-11 17,-7 Q17,-3 13,-2" stroke="black" stroke-width="1" fill="#FFD8A8"/>
+    <path d="M-15,2 Q-18,6 -14,8 Q-10,10 -8,7 Q-4,11 0,9 Q4,11 8,7 Q10,10 14,8 Q18,6 15,2 Q0,8 -15,2 Z" fill="${gld}" stroke="black" stroke-width="0.9"/>
+    <path d="M-20,8 L-26,35 L-1,35 L-1,8 Z" fill="${pri}" stroke="black" stroke-width="1.2"/>
+    <path d="M20,8 L26,35 L1,35 L1,8 Z"  fill="${sec}" stroke="black" stroke-width="1.2"/>
+    <rect x="-2" y="8" width="4" height="27" fill="${gld}"/>
+    <rect x="-18" y="14" width="10" height="4" rx="2" fill="${gld}" opacity="0.7"/>
+    <rect x="-18" y="22" width="10" height="4" rx="2" fill="${gld}" opacity="0.7"/>
+    <rect x="-18" y="30" width="10" height="4" rx="2" fill="${gld}" opacity="0.7"/>
+    <rect x="8"  y="14" width="10" height="4" rx="2" fill="${pri}" opacity="0.7"/>
+    <rect x="8"  y="22" width="10" height="4" rx="2" fill="${pri}" opacity="0.7"/>
+    <rect x="8"  y="30" width="10" height="4" rx="2" fill="${pri}" opacity="0.7"/>
+    <text x="-11" y="20" font-size="9" fill="${gld}" text-anchor="middle" opacity="0.6">${suit}</text>
+    <text x="13"  y="20" font-size="9" fill="${sec}" text-anchor="middle" opacity="0.6">${suit}</text>
+    <line x1="-22" y1="28" x2="-27" y2="5"   stroke="#bbb" stroke-width="2.2"/>
+    <line x1="-30" y1="12" x2="-24" y2="12"   stroke="${gld}" stroke-width="2.5"/>
+    <path d="M-27,4 L-28,-1 L-26,-1 Z"        fill="#bbb" stroke="#aaa" stroke-width="0.5"/>
+    <line x1="22" y1="20" x2="28" y2="-4" stroke="${gld}" stroke-width="2.2"/>
+    <path d="M25,-6 Q28,-12 31,-8 Q28,-3 25,-6 Z" fill="#2e7d32" stroke="black" stroke-width="0.7"/>
+  </g>`;
+}
+
+function faceCardInner(rank, suit, isRed, W, H) {
+  const bg   = isRed ? '#fff8f8' : '#f6f6ff';
+  const frm  = isRed ? '#ffcccc' : '#ccccee';
+  const midY = H / 2;
+  const tY   = 36 + (midY - 36) * 0.46;
+  const bY   = midY + (H - 36 - midY) * 0.54;
+
+  let fig;
+  if (rank === 'K') fig = kingFig(suit, isRed);
+  else if (rank === 'Q') fig = queenFig(suit, isRed);
+  else fig = jackFig(suit, isRed);
+
+  const wMk = isRed ? 'rgba(160,0,0,0.06)' : 'rgba(0,0,40,0.06)';
+
+  return `
+  <rect x="12" y="32" width="${W-24}" height="${H-64}" rx="4" fill="${bg}" stroke="${frm}" stroke-width="0.9"/>
+  <text x="${W/2}" y="${midY+8}" font-size="52" fill="${wMk}" text-anchor="middle" dominant-baseline="middle">${suit}</text>
+  <line x1="14" y1="${midY}" x2="${W-14}" y2="${midY}" stroke="${frm}" stroke-width="0.9"/>
+  <g transform="translate(${W/2},${tY})">${fig}</g>
+  <g transform="translate(${W/2},${bY}) rotate(180)">${fig}</g>`;
+}
+
+function cardSVG(rank, suit) {
+  const isRed = RED_S.has(suit);
+  const col   = isRed ? '#cc0000' : '#111';
+  const disp  = rank === 'T' ? '10' : rank;
+  const W = 130, H = 182;
+  const rkFS  = disp.length > 1 ? 15 : 19;
+
+  const inner = 'JQK'.includes(rank)
+    ? faceCardInner(rank, suit, isRed, W, H)
+    : pipInner(rank, suit, col);
+
+  return `<svg class="card-svg" viewBox="0 0 ${W} ${H}"
+    xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="cg${rank}${suit.charCodeAt(0)}" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="white" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#f0f0f0" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+  <!-- card body -->
+  <rect width="${W}" height="${H}" rx="10" ry="10" fill="url(#cg${rank}${suit.charCodeAt(0)})" stroke="#b0b0b0" stroke-width="1"/>
+  <rect x="3.5" y="3.5" width="${W-7}" height="${H-7}" rx="8" ry="8" fill="none"
+    stroke="${isRed?'#ffd8d8':'#dde'}" stroke-width="0.9"/>
+
+  <!-- TL index -->
+  <text x="11" y="${rkFS+5}" font-family="Georgia,Times New Roman,serif" font-weight="bold"
+    font-size="${rkFS}" fill="${col}" text-anchor="middle">${disp}</text>
+  <text x="11" y="${rkFS+20}" font-family="Arial,sans-serif" font-size="15" fill="${col}" text-anchor="middle">${suit}</text>
+
+  <!-- BR index (rotated 180°) -->
+  <g transform="rotate(180,${W/2},${H/2})">
+    <text x="11" y="${rkFS+5}" font-family="Georgia,Times New Roman,serif" font-weight="bold"
+      font-size="${rkFS}" fill="${col}" text-anchor="middle">${disp}</text>
+    <text x="11" y="${rkFS+20}" font-family="Arial,sans-serif" font-size="15" fill="${col}" text-anchor="middle">${suit}</text>
+  </g>
+
+  ${inner}
+  </svg>`;
+}
+
+function makeCard(rank, suit) {
+  const d = document.createElement('div');
+  d.innerHTML = cardSVG(rank, suit);
+  return d.firstElementChild;
+}
+
+/* ═══════════════════════════ HAND → CARDS ══════════════════ */
+function h2cards(hand) {
+  if (hand.length === 2 && hand[0] === hand[1]) {
+    const s1=rS(), s2=dS(s1);
+    return [{rank:hand[0],suit:s1},{rank:hand[1],suit:s2}];
+  }
+  const suf=hand.slice(-1), r1=hand[0], r2=hand[1];
+  if (suf==='s') { const s=rS(); return [{rank:r1,suit:s},{rank:r2,suit:s}]; }
+  const s1=rS(), s2=dS(s1);
+  return [{rank:r1,suit:s1},{rank:r2,suit:s2}];
+}
+function hLabel(hand) {
+  if (hand.length===2 && hand[0]===hand[1]) return hand+'　（ペア）';
+  const suf=hand.slice(-1), r=hand.slice(0,hand.length-1).replace('T','10');
+  return r+'　'+(suf==='s'?'（スーテッド）':'（オフスート）');
+}
+
+/* ═══════════════════════════ STATE ═════════════════════════ */
+function loadSt() {
+  try {
+    const s=JSON.parse(localStorage.getItem('pkrQz')||'{}');
+    return {total:s.total||0,correct:s.correct||0,wrong:s.wrong||{},hist:s.hist||[]};
+  } catch(e){return{total:0,correct:0,wrong:{},hist:[]};}
+}
+function saveSt(st){try{localStorage.setItem('pkrQz',JSON.stringify(st));}catch(e){}}
+
+let st=loadSt(), curHand=null, curCat=null, ans=false;
+
+/* ═══════════════════════════ QUIZ ══════════════════════════ */
+function pick(excl) {
+  let h,t=0;
+  do{h=ALL[Math.floor(Math.random()*ALL.length)];t++;}
+  while(h===excl&&ALL.length>1&&t<20);
+  return h;
+}
+
+function renderQ(forcedHand) {
+  ans=false;
+  document.getElementById('next-btn').style.display='none';
+  document.getElementById('feedback').textContent='';
+  const hand=forcedHand||pick(curHand);
+  curHand=hand; curCat=H2C[hand];
+  const cards=h2cards(hand);
+  const area=document.getElementById('cards-area');
+  area.innerHTML='';
+  cards.forEach(c=>area.appendChild(makeCard(c.rank,c.suit)));
+  document.getElementById('hand-label').textContent=hLabel(hand);
+  buildBtns();
+}
+
+function buildBtns(){
+  const area=document.getElementById('answer-area');
+  area.innerHTML='';
+  CATS.forEach(cat=>{
+    const b=document.createElement('button');
+    b.className='ans-btn'; b.textContent=cat.label; b.dataset.id=cat.id;
+    if(cat.isPink){b.style.background='#fff';b.style.border='3px solid #e91e63';b.style.color='#c2185b';}
+    else{b.style.background=cat.bg;b.style.border=`3px solid ${cat.border}`;b.style.color=cat.text;}
+    b.onclick=()=>submitAns(cat);
+    area.appendChild(b);
+  });
+}
+
+function submitAns(chosen){
+  if(ans)return; ans=true;
+  const ok=chosen.id===curCat.id;
+  st.total++;
+  if(ok){
+    st.correct++;
+    if(st.wrong[curHand]){
+      st.wrong[curHand].n=Math.max(0,st.wrong[curHand].n-1);
+      if(!st.wrong[curHand].n)delete st.wrong[curHand];
+    }
+  } else {
+    if(!st.wrong[curHand])st.wrong[curHand]={n:0,catId:curCat.id};
+    st.wrong[curHand].n++;
+  }
+  st.hist.unshift({hand:curHand,gId:chosen.id,cId:curCat.id,ok});
+  if(st.hist.length>200)st.hist=st.hist.slice(0,200);
+  saveSt(st); updStats();
+  document.querySelectorAll('.ans-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.dataset.id===curCat.id)b.classList.add('reveal');
+    if(b.dataset.id===chosen.id&&!ok)b.classList.add('wrong');
+    if(b.dataset.id===chosen.id&&ok)b.classList.add('correct');
+  });
+  const fb=document.getElementById('feedback');
+  if(ok){fb.textContent='✅ 正解！';fb.style.color='#76ff03';}
+  else{fb.innerHTML=`❌ 不正解。正解は「${curCat.label}」`;fb.style.color='#ff5252';}
+  document.getElementById('next-btn').style.display='inline-block';
+}
+function nextQ(){renderQ();}
+
+/* ═══════════════════════════ STATS ════════════════════════ */
+function updStats(){
+  document.getElementById('st-total').textContent=`合計: ${st.total}問`;
+  document.getElementById('st-correct').textContent=`正解: ${st.correct}問`;
+  const r=st.total?Math.round(st.correct/st.total*100):'-';
+  document.getElementById('st-rate').textContent=`正答率: ${r}%`;
+  document.getElementById('st-review').textContent=`復習: ${Object.keys(st.wrong).length}件`;
+}
+
+/* ═══════════════════════════ TABS ══════════════════════════ */
+function showTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['quiz','review','history'][i]===tab));
+  document.getElementById('quiz-panel').style.display   =tab==='quiz'   ?'flex':'none';
+  document.getElementById('review-panel').style.display =tab==='review' ?'block':'none';
+  document.getElementById('history-panel').style.display=tab==='history'?'block':'none';
+  if(tab==='review')renderRev();
+  if(tab==='history')renderHist();
+  if(tab==='quiz')renderQ();
+}
+
+/* ═══════════════════════════ REVIEW ═══════════════════════ */
+function renderRev(){
+  const list=document.getElementById('review-list');
+  const wr=Object.entries(st.wrong).sort((a,b)=>b[1].n-a[1].n);
+  if(!wr.length){list.innerHTML='<div style="text-align:center;opacity:0.6;padding:30px">間違いはありません 🎉</div>';return;}
+  list.innerHTML=wr.map(([hand,info])=>{
+    const cat=H2C[hand];if(!cat)return'';
+    let badge;
+    if(cat.isPink)badge=`<span class="rev-badge" style="background:#fff;border:2px solid #e91e63;color:#c2185b">${cat.label}</span>`;
+    else badge=`<span class="rev-badge" style="background:${cat.bg};color:${cat.text};border:1px solid ${cat.border}">${cat.label}</span>`;
+    return `<div class="review-item">
+      <span class="review-hand">${hand.replace('T','10')}</span>${badge}
+      <span style="opacity:0.62;font-size:0.76rem">×${info.n}回</span>
+      <button onclick="practiceHand('${hand}')"
+        style="margin-left:auto;padding:4px 11px;border-radius:14px;border:none;background:rgba(255,255,255,0.14);color:#fff;cursor:pointer;font-size:0.74rem">練習</button>
+    </div>`;
+  }).join('');
+}
+function practiceHand(h){showTab('quiz');setTimeout(()=>renderQ(h),40);}
+function clearReview(){if(!confirm('復習リストをクリアしますか？'))return;st.wrong={};saveSt(st);updStats();renderRev();}
+
+/* ═══════════════════════════ HISTORY ══════════════════════ */
+function renderHist(){
+  const list=document.getElementById('history-list');
+  if(!st.hist.length){list.innerHTML='<div style="text-align:center;opacity:0.6;padding:30px">まだ回答履歴がありません</div>';return;}
+  const cm={};CATS.forEach(c=>{cm[c.id]=c;});
+  list.innerHTML=st.hist.map(item=>{
+    const cor=cm[item.cId],gss=cm[item.gId];
+    let badge='';
+    if(cor){
+      const bg=cor.isPink?'#fff':cor.bg,cl=cor.isPink?'#c2185b':cor.text,bd=cor.isPink?'2px solid #e91e63':'none';
+      badge=`<span style="padding:2px 8px;border-radius:10px;background:${bg};color:${cl};border:${bd};font-size:0.74rem;font-weight:700">${cor.label}</span>`;
+    }
+    return `<div class="history-item">
+      <span>${item.ok?'✅':'❌'}</span>
+      <span style="font-weight:700">${(item.hand||'').replace('T','10')}</span>
+      ${badge}
+      ${!item.ok&&gss?`<span style="opacity:0.58;font-size:0.74rem">→${gss.label}と回答</span>`:''}
+    </div>`;
+  }).join('');
+}
+function clearHistory(){
+  if(!confirm('履歴をクリアしますか？'))return;
+  st.hist=[];st.total=0;st.correct=0;saveSt(st);updStats();renderHist();
+}
+
+/* ═══════════════════════════ INIT ══════════════════════════ */
+updStats();
+renderQ();
+</script>
+</body>
+</html>
